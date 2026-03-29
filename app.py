@@ -1,14 +1,14 @@
 import logging
 
-from flask import Flask, jsonify, render_template
+from flask import Flask, jsonify, render_template, request
 
 from devices import Actuator, Database, MainControlUnit, Sensor
 
 app = Flask(__name__)
 
-temperature_sensor = Sensor(1, "Датчик температуры", "temperature", "°C")
-humidity_sensor = Sensor(2, "Датчик влажности воздуха", "humidity", "%")
-soil_sensor = Sensor(3, "Датчик влажности почвы", "soil_moisture", "%")
+temperature_sensor = Sensor(1, "Датчик температуры", "temperature", "°C", "temperature")
+humidity_sensor = Sensor(2, "Датчик влажности воздуха", "humidity", "%", "humidity")
+soil_sensor = Sensor(3, "Датчик влажности почвы", "soil_moisture", "%", "soil")
 fan = Actuator(101, "Вентилятор", "fan", 120.0)
 pump = Actuator(102, "Насос полива", "pump", 80.0)
 controller = MainControlUnit()
@@ -59,6 +59,22 @@ def connect_controller():
 @app.route("/connect/database")
 def connect_database():
     return jsonify(database.connect())
+
+
+@app.route("/connect/command", methods=["GET"])
+def connect_command():
+    """Применить управляющие параметры ко всем вещам."""
+    return jsonify(
+        {
+            "temperature": temperature_sensor.connect(request),
+            "humidity": humidity_sensor.connect(request),
+            "soil": soil_sensor.connect(request),
+            "fan": fan.connect(request),
+            "pump": pump.connect(request),
+            "controller": controller.connect(request),
+            "database": database.connect(request),
+        }
+    )
 
 
 if __name__ == "__main__":

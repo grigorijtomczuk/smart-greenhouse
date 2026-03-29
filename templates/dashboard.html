@@ -47,6 +47,96 @@
                 </article>
             </div>
         </section>
+
+        <section class="card main control-section">
+            <h2>Управление оборудованием</h2>
+            <div class="grid">
+                <article class="card">
+                    <h2>Датчик температуры</h2>
+                    <label class="field-label">Питание</label>
+                    <select id="temperature_power" class="control-input">
+                        <option value="">—</option>
+                        <option value="on">Вкл</option>
+                        <option value="off">Выкл</option>
+                    </select>
+                    <label class="field-label">Калибровка, °C</label>
+                    <input id="temperature_calibrate" class="control-input" type="text" placeholder="например 23.5">
+                </article>
+                <article class="card">
+                    <h2>Датчик влажности воздуха</h2>
+                    <label class="field-label">Питание</label>
+                    <select id="humidity_power" class="control-input">
+                        <option value="">—</option>
+                        <option value="on">Вкл</option>
+                        <option value="off">Выкл</option>
+                    </select>
+                    <label class="field-label">Калибровка, %</label>
+                    <input id="humidity_calibrate" class="control-input" type="text" placeholder="например 55">
+                </article>
+                <article class="card">
+                    <h2>Датчик влажности почвы</h2>
+                    <label class="field-label">Питание</label>
+                    <select id="soil_power" class="control-input">
+                        <option value="">—</option>
+                        <option value="on">Вкл</option>
+                        <option value="off">Выкл</option>
+                    </select>
+                    <label class="field-label">Калибровка, %</label>
+                    <input id="soil_calibrate" class="control-input" type="text" placeholder="например 40">
+                </article>
+                <article class="card">
+                    <h2>Вентилятор</h2>
+                    <label class="field-label">Мощность, Вт</label>
+                    <input id="fan_power_cmd" class="control-input" type="text" placeholder="например 90">
+                    <label class="field-label">Питание</label>
+                    <select id="fan_power_state" class="control-input">
+                        <option value="">—</option>
+                        <option value="on">Вкл</option>
+                        <option value="off">Выкл</option>
+                    </select>
+                    <label class="field-label">Действие (лог)</label>
+                    <input id="fan_action" class="control-input" type="text" placeholder="например ускорить">
+                </article>
+                <article class="card">
+                    <h2>Насос</h2>
+                    <label class="field-label">Мощность, Вт</label>
+                    <input id="pump_power_cmd" class="control-input" type="text" placeholder="например 60">
+                    <label class="field-label">Питание</label>
+                    <select id="pump_power_state" class="control-input">
+                        <option value="">—</option>
+                        <option value="on">Вкл</option>
+                        <option value="off">Выкл</option>
+                    </select>
+                    <label class="field-label">Действие (лог)</label>
+                    <input id="pump_action" class="control-input" type="text" placeholder="например полив">
+                </article>
+                <article class="card">
+                    <h2>Контроллер</h2>
+                    <label class="field-label">Режим</label>
+                    <select id="controller_mode_cmd" class="control-input">
+                        <option value="">—</option>
+                        <option value="auto">Авто</option>
+                        <option value="manual">Ручной</option>
+                    </select>
+                    <label class="field-label inline-check">
+                        <input id="controller_clear_alerts" type="checkbox">
+                        Сбросить тревоги
+                    </label>
+                </article>
+                <article class="card">
+                    <h2>База данных</h2>
+                    <label class="field-label">Команда (лог)</label>
+                    <input id="database_command" class="control-input" type="text" placeholder="например checkpoint">
+                </article>
+                <div class="controls">
+                    <div class="actions">
+                        <button type="button" id="send_commands" class="btn-primary">Отправить команды</button>
+                    </div>
+                    <label class="field-label">Ответ сервера</label>
+                    <textarea id="command_result" class="control-input mono" readonly></textarea>
+                </div>
+            </div>
+        </section>
     </main>
 </body>
 
