@@ -1,51 +1,66 @@
-from flask import Flask
-from datetime import datetime
-from devices import Sensor, Actuator, MainControlUnit, Database
+import logging
+
+from flask import Flask, jsonify, render_template
+
+from devices import Actuator, Database, MainControlUnit, Sensor
 
 app = Flask(__name__)
 
-@app.route('/')
+temperature_sensor = Sensor(1, "Датчик температуры", "temperature", "°C")
+humidity_sensor = Sensor(2, "Датчик влажности воздуха", "humidity", "%")
+soil_sensor = Sensor(3, "Датчик влажности почвы", "soil_moisture", "%")
+fan = Actuator(101, "Вентилятор", "fan", 120.0)
+pump = Actuator(102, "Насос полива", "pump", 80.0)
+controller = MainControlUnit()
+database = Database("sqlite:///greenhouse.db", "./data")
+
+temperature_sensor.turn_on()
+humidity_sensor.turn_on()
+soil_sensor.turn_on()
+fan.turn_on()
+pump.turn_on()
+
+
+@app.route("/")
 def index():
-    # Датчик температуры
-    temp_sensor = Sensor(1, "Датчик температуры", "temperature", "C")
-    temp_sensor.turn_on()
-    temp_sensor.measure()
-    temp_sensor.calibrate(23.0)
-    status = temp_sensor.get_status()
-    temp_sensor.turn_off()
-
-    # Исполнительное устройство (вентилятор)
-    fan = Actuator(101, "Вентилятор", "fan", 150)
-    fan.turn_on()
-    fan.apply_action("увеличить обороты")
-    fan.set_power(200)
-    fan.turn_off()
-
-    # Контроллер
-    controller = MainControlUnit()
-    controller.process_data({1: 23.0, 2: 65.0})
-    controller.check_alerts()
-    controller.send_command(fan, "включить на полную мощность")
-
-    # База данных
-    db = Database("sqlite:///greenhouse.db", "./data")
-    now = datetime.now()
-    db.save_reading(1, 23.0, now)
-    db.save_event(101, "вентилятор включён", now)
-    history = db.get_history(now, now)
-
-    return "Проверьте терминал. В нём отражены логи сервера."
+    return render_template("dashboard.html")
 
 
-@app.route('/sensor')
-def sensor_example():
-    humidity = Sensor(2, "Датчик влажности", "humidity", "%")
-    humidity.turn_on()
-    humidity.measure()
-    humidity.calibrate(65.0)
-    humidity.turn_off()
-    return "Датчик влажности сработал. Смотрите лог."
+@app.route("/connect/temperature")
+def connect_temperature():
+    return jsonify(temperature_sensor.connect())
 
 
-if __name__ == '__main__':
+@app.route("/connect/humidity")
+def connect_humidity():
+    return jsonify(humidity_sensor.connect())
+
+
+@app.route("/connect/soil")
+def connect_soil():
+    return jsonify(soil_sensor.connect())
+
+
+@app.route("/connect/fan")
+def connect_fan():
+    return jsonify(fan.connect())
+
+
+@app.route("/connect/pump")
+def connect_pump():
+    return jsonify(pump.connect())
+
+
+@app.route("/connect/controller")
+def connect_controller():
+    return jsonify(controller.connect())
+
+
+@app.route("/connect/database")
+def connect_database():
+    return jsonify(database.connect())
+
+
+if __name__ == "__main__":
+    logging.getLogger("werkzeug").setLevel(logging.ERROR)
     app.run(debug=True)

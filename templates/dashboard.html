@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Умная теплица</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="{{ url_for('static', filename='js/index.js') }}" defer></script>
+</head>
+
+<body>
+    <main class="container">
+        <section class="card main">
+            <h2>Агроном (оператор)</h2>
+            <div class="grid">
+                <article class="card">
+                    <h2>Датчик температуры</h2>
+                    <input id="temperature_value" type="text" readonly>
+                </article>
+                <article class="card">
+                    <h2>Датчик влажности воздуха</h2>
+                    <input id="humidity_value" type="text" readonly>
+                </article>
+                <article class="card">
+                    <h2>Датчик влажности почвы</h2>
+                    <input id="soil_value" type="text" readonly>
+                </article>
+                <article class="card">
+                    <h2>Вентилятор</h2>
+                    <input id="fan_power" type="text" readonly>
+                </article>
+                <article class="card">
+                    <h2>Насос</h2>
+                    <input id="pump_power" type="text" readonly>
+                </article>
+                <article class="card">
+                    <h2>Контроллер</h2>
+                    <input id="controller_mode" type="text" readonly>
+                    <input id="controller_alerts" type="text" readonly>
+                </article>
+                <article class="card">
+                    <h2>База данных</h2>
+                    <input id="db_connection" type="text" readonly>
+                    <input id="db_records" type="text" readonly>
+                </article>
+            </div>
+        </section>
+    </main>
+</body>
+
+</html>
