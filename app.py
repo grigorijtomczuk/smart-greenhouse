@@ -76,7 +76,6 @@ def connect_command():
         }
     )
 
-
 if __name__ == "__main__":
     logging.getLogger("werkzeug").setLevel(logging.ERROR)
     app.run(debug=True)

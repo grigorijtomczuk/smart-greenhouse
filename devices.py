@@ -1,3 +1,4 @@
+import re
 from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import Dict, List, Optional, Union
@@ -59,20 +60,26 @@ class Sensor(Device):
 
     def _apply_control(self, request: Request) -> None:
         p = self.control_prefix
-        power = request.args.get(f"{p}_power", "").strip().lower()
-        if power in ("on", "1", "true"):
-            self.turn_on()
-        elif power in ("off", "0", "false"):
-            self.turn_off()
+        power_raw = request.args.get(f"{p}_power", "").strip().lower()
+        if power_raw:
+            # Допустимо on, off, 1, 0, true, false
+            if re.match(r'^(on|off|1|0|true|false)$', power_raw):
+                if power_raw in ("on", "1", "true"):
+                    self.turn_on()
+                else:
+                    self.turn_off()
+            else:
+                print(
+                    f"[LOG] Ошибка: недопустимое значение power '{power_raw}' для {self.name}. Допустимо: on/off/1/0/true/false")
 
         raw_cal = request.args.get(f"{p}_calibrate", "").strip()
         if raw_cal:
             try:
-                self.calibrate(float(raw_cal.replace(",", ".")))
+                # Заменяем запятую на точку и преобразуем в float
+                value = float(raw_cal.replace(",", "."))
+                self.calibrate(value)
             except ValueError:
-                print(
-                    f"[LOG] Пропуск калибровки {self.name}: некорректное число {raw_cal!r}"
-                )
+                print(f"[LOG] Ошибка: калибровка {self.name} – некорректное число '{raw_cal}'")
 
     def connect(
         self, request: Optional[Request] = None
@@ -119,24 +126,31 @@ class Actuator(Device):
 
     def _apply_control(self, request: Request) -> None:
         p = self.control_prefix
+
         power_kw = request.args.get(f"{p}_power_cmd", "").strip()
         if power_kw:
             try:
                 self.set_power(float(power_kw.replace(",", ".")))
             except ValueError:
-                print(
-                    f"[LOG] Пропуск установки мощности {self.name}: некорректное число"
-                )
+                print(f"[LOG] Ошибка: мощность {self.name} – некорректное число '{power_kw}'")
 
         action = request.args.get(f"{p}_action", "").strip()
         if action:
-            self.apply_action(action)
+            if re.match(r'^[a-zA-Zа-яА-Я0-9_\-]+$', action):
+                self.apply_action(action)
+            else:
+                print(
+                    f"[LOG] Ошибка: действие '{action}' для {self.name} содержит недопустимые символы. Разрешены буквы, цифры, '_', '-'")
 
         st = request.args.get(f"{p}_power_state", "").strip().lower()
-        if st in ("on", "1", "true"):
-            self.turn_on()
-        elif st in ("off", "0", "false"):
-            self.turn_off()
+        if st:
+            if re.match(r'^(on|off|1|0|true|false)$', st):
+                if st in ("on", "1", "true"):
+                    self.turn_on()
+                else:
+                    self.turn_off()
+            else:
+                print(f"[LOG] Ошибка: неверное состояние питания '{st}' для {self.name}")
 
     def connect(
         self, request: Optional[Request] = None
@@ -183,13 +197,20 @@ class MainControlUnit:
 
     def _apply_control(self, request: Request) -> None:
         mode = request.args.get("controller_mode", "").strip().lower()
-        if mode in ("auto", "manual"):
-            self.mode = mode
-            print(f"[LOG] Контроллер: режим установлен в {self.mode}")
+        if mode:
+            if re.match(r'^(auto|manual)$', mode):
+                self.mode = mode
+                print(f"[LOG] Контроллер: режим установлен в {self.mode}")
+            else:
+                print(f"[LOG] Ошибка: неверный режим '{mode}'. Допустимо: auto / manual")
+
         clear = request.args.get("controller_clear_alerts", "").strip().lower()
-        if clear in ("1", "true", "yes", "on"):
-            self.alerts = []
-            print("[LOG] Контроллер: список тревог очищен")
+        if clear:
+            if re.match(r'^(1|true|yes|on)$', clear):
+                self.alerts = []
+                print("[LOG] Контроллер: список тревог очищен")
+            else:
+                print(f"[LOG] Ошибка: неверное значение clear_alerts '{clear}'. Игнорируем.")
 
     def connect(
         self, request: Optional[Request] = None
@@ -236,7 +257,11 @@ class Database:
     def _apply_control(self, request: Request) -> None:
         cmd = request.args.get("database_command", "").strip()
         if cmd:
-            print(f"[LOG] БД: принята управляющая команда {cmd!r}")
+            if re.match(r'^[a-zA-Z0-9_\-]+$', cmd):
+                print(f"[LOG] БД: принята управляющая команда '{cmd}'")
+            else:
+                print(
+                    f"[LOG] Ошибка: команда БД '{cmd}' содержит недопустимые символы. Разрешены буквы, цифры, '_', '-'")
 
     def connect(self, request: Optional[Request] = None) -> Dict[str, Union[str, int]]:
         if request is not None:
