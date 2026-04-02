@@ -11,8 +11,11 @@ humidity_sensor = Sensor(2, "Датчик влажности воздуха", "h
 soil_sensor = Sensor(3, "Датчик влажности почвы", "soil_moisture", "%", "soil")
 fan = Actuator(101, "Вентилятор", "fan", 120.0)
 pump = Actuator(102, "Насос полива", "pump", 80.0)
-controller = MainControlUnit()
+controller = MainControlUnit(fan_device=fan, pump_device=pump)
 database = Database("sqlite:///greenhouse.db", "./data")
+
+last_temperature = 0.0
+last_soil = 0.0
 
 temperature_sensor.turn_on()
 humidity_sensor.turn_on()
@@ -28,17 +31,24 @@ def index():
 
 @app.route("/connect/temperature")
 def connect_temperature():
-    return jsonify(temperature_sensor.connect())
+    global last_temperature
+    data = temperature_sensor.connect()
+    last_temperature = data["value"]
+    controller.auto_control(last_temperature, last_soil)
+    return jsonify(data)
 
+@app.route("/connect/soil")
+def connect_soil():
+    global last_soil
+    data = soil_sensor.connect()
+    last_soil = data["value"]
+    controller.auto_control(last_temperature, last_soil)
+    return jsonify(data)
 
 @app.route("/connect/humidity")
 def connect_humidity():
     return jsonify(humidity_sensor.connect())
 
-
-@app.route("/connect/soil")
-def connect_soil():
-    return jsonify(soil_sensor.connect())
 
 
 @app.route("/connect/fan")

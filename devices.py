@@ -1,3 +1,4 @@
+import random
 import re
 from abc import ABC, abstractmethod
 from datetime import datetime
@@ -47,10 +48,17 @@ class Sensor(Device):
         self.value: float = 0.0
 
     def measure(self):
-        self.value = 22.5
-        print(
-            f"[LOG] Датчик {self.name} (ID: {self.id}) измерил: {self.value} {self.unit}"
-        )
+        # Генерация случайных значений
+        if self.type == "temperature":
+            self.value = round(random.uniform(15.0, 35.0), 1)
+        elif self.type == "humidity":
+            self.value = round(random.uniform(30.0, 80.0), 1)
+        elif self.type == "soil_moisture":
+            self.value = round(random.uniform(20.0, 60.0), 1)
+        else:
+            self.value = round(random.uniform(0, 100), 1)
+        print(f"[LOG] Датчик {self.name} (ID: {self.id}) измерил: {self.value} {self.unit}")
+        return self.value
 
     def calibrate(self, value: float):
         self.value = value
@@ -81,19 +89,15 @@ class Sensor(Device):
             except ValueError:
                 print(f"[LOG] Ошибка: калибровка {self.name} – некорректное число '{raw_cal}'")
 
-    def connect(
-        self, request: Optional[Request] = None
-    ) -> Dict[str, Union[int, float, str, bool]]:
+    def connect(self, request: Optional[Request] = None) -> Dict[str, Union[int, float, str, bool]]:
         if request is not None:
             self._apply_control(request)
             print(
-                f"[LOG] Управляющая команда для датчика {self.name}: "
-                f"значение {self.value} {self.unit}, статус включения {self.status}"
-            )
+                f"[LOG] Управляющая команда для датчика {self.name}: значение {self.value} {self.unit}, статус {self.status}")
         else:
-            print(
-                f"[LOG] Опрос датчика {self.name}: текущее значение {self.value} {self.unit}"
-            )
+            # Без команд выполняем измерение
+            self.measure()
+            print(f"[LOG] Опрос датчика {self.name}: текущее значение {self.value} {self.unit}")
         return {
             "id": self.id,
             "name": self.name,
@@ -174,10 +178,12 @@ class Actuator(Device):
 
 
 class MainControlUnit:
-    def __init__(self):
+    def __init__(self, fan_device=None, pump_device=None):
         self.mode = "auto"
         self.schedule: Dict[str, str] = {}
         self.alerts: List[str] = []
+        self.fan = fan_device
+        self.pump = pump_device
 
     def process_data(self, sensor_data: Dict[int, float]):
         print(f"[LOG] Контроллер обрабатывает данные с датчиков: {sensor_data}")
@@ -225,6 +231,34 @@ class MainControlUnit:
             "alerts_count": len(self.alerts),
             "alerts": list(self.alerts),
         }
+
+    def auto_control(self, temperature: float, soil_moisture: float):
+        """Автоматическое управление на основе показаний датчиков"""
+        if self.mode != "auto":
+            print("[LOG] Автоматика отключена (ручной режим)")
+            return
+
+        # Управление вентилятором по температуре
+        if self.fan:
+            if temperature > 28.0 and not self.fan.status:
+                self.fan.turn_on()
+                self.alerts.append(f"Авто: вентилятор включён при {temperature}°C")
+                print(f"[LOG] Автоматика: включён вентилятор (температура {temperature}°C)")
+            elif temperature <= 28.0 and self.fan.status:
+                self.fan.turn_off()
+                self.alerts.append(f"Авто: вентилятор выключен при {temperature}°C")
+                print(f"[LOG] Автоматика: выключен вентилятор (температура {temperature}°C)")
+
+        # Управление насосом по влажности почвы
+        if self.pump:
+            if soil_moisture < 30.0 and not self.pump.status:
+                self.pump.turn_on()
+                self.alerts.append(f"Авто: насос включён (влажность почвы {soil_moisture}%)")
+                print(f"[LOG] Автоматика: включён насос (влажность почвы {soil_moisture}%)")
+            elif soil_moisture >= 30.0 and self.pump.status:
+                self.pump.turn_off()
+                self.alerts.append(f"Авто: насос выключен (влажность почвы {soil_moisture}%)")
+                print(f"[LOG] Автоматика: выключен насос (влажность почвы {soil_moisture}%)")
 
 
 class Database:
