@@ -34,21 +34,22 @@ def connect_temperature():
     global last_temperature
     data = temperature_sensor.connect()
     last_temperature = data["value"]
-    controller.auto_control(last_temperature, last_soil)
+    controller.auto_control(float(last_temperature), float(last_soil))
     return jsonify(data)
+
 
 @app.route("/connect/soil")
 def connect_soil():
     global last_soil
     data = soil_sensor.connect()
     last_soil = data["value"]
-    controller.auto_control(last_temperature, last_soil)
+    controller.auto_control(float(last_temperature), float(last_soil))
     return jsonify(data)
+
 
 @app.route("/connect/humidity")
 def connect_humidity():
     return jsonify(humidity_sensor.connect())
-
 
 
 @app.route("/connect/fan")
@@ -85,6 +86,7 @@ def connect_command():
             "database": database.connect(request),
         }
     )
+
 
 if __name__ == "__main__":
     logging.getLogger("werkzeug").setLevel(logging.ERROR)

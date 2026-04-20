@@ -57,7 +57,9 @@ class Sensor(Device):
             self.value = round(random.uniform(20.0, 60.0), 1)
         else:
             self.value = round(random.uniform(0, 100), 1)
-        print(f"[LOG] Датчик {self.name} (ID: {self.id}) измерил: {self.value} {self.unit}")
+        print(
+            f"[LOG] Датчик {self.name} (ID: {self.id}) измерил: {self.value} {self.unit}"
+        )
         return self.value
 
     def calibrate(self, value: float):
@@ -71,14 +73,15 @@ class Sensor(Device):
         power_raw = request.args.get(f"{p}_power", "").strip().lower()
         if power_raw:
             # Допустимо on, off, 1, 0, true, false
-            if re.match(r'^(on|off|1|0|true|false)$', power_raw):
+            if re.match(r"^(on|off|1|0|true|false)$", power_raw):
                 if power_raw in ("on", "1", "true"):
                     self.turn_on()
                 else:
                     self.turn_off()
             else:
                 print(
-                    f"[LOG] Ошибка: недопустимое значение power '{power_raw}' для {self.name}. Допустимо: on/off/1/0/true/false")
+                    f"[LOG] Ошибка: недопустимое значение power '{power_raw}' для {self.name}. Допустимо: on/off/1/0/true/false"
+                )
 
         raw_cal = request.args.get(f"{p}_calibrate", "").strip()
         if raw_cal:
@@ -87,17 +90,24 @@ class Sensor(Device):
                 value = float(raw_cal.replace(",", "."))
                 self.calibrate(value)
             except ValueError:
-                print(f"[LOG] Ошибка: калибровка {self.name} – некорректное число '{raw_cal}'")
+                print(
+                    f"[LOG] Ошибка: калибровка {self.name} – некорректное число '{raw_cal}'"
+                )
 
-    def connect(self, request: Optional[Request] = None) -> Dict[str, Union[int, float, str, bool]]:
+    def connect(
+        self, request: Optional[Request] = None
+    ) -> Dict[str, Union[int, float, str, bool]]:
         if request is not None:
             self._apply_control(request)
             print(
-                f"[LOG] Управляющая команда для датчика {self.name}: значение {self.value} {self.unit}, статус {self.status}")
+                f"[LOG] Управляющая команда для датчика {self.name}: значение {self.value} {self.unit}, статус {self.status}"
+            )
         else:
             # Без команд выполняем измерение
             self.measure()
-            print(f"[LOG] Опрос датчика {self.name}: текущее значение {self.value} {self.unit}")
+            print(
+                f"[LOG] Опрос датчика {self.name}: текущее значение {self.value} {self.unit}"
+            )
         return {
             "id": self.id,
             "name": self.name,
@@ -136,25 +146,30 @@ class Actuator(Device):
             try:
                 self.set_power(float(power_kw.replace(",", ".")))
             except ValueError:
-                print(f"[LOG] Ошибка: мощность {self.name} – некорректное число '{power_kw}'")
+                print(
+                    f"[LOG] Ошибка: мощность {self.name} – некорректное число '{power_kw}'"
+                )
 
         action = request.args.get(f"{p}_action", "").strip()
         if action:
-            if re.match(r'^[a-zA-Zа-яА-Я0-9_\-]+$', action):
+            if re.match(r"^[a-zA-Zа-яА-Я0-9_\-]+$", action):
                 self.apply_action(action)
             else:
                 print(
-                    f"[LOG] Ошибка: действие '{action}' для {self.name} содержит недопустимые символы. Разрешены буквы, цифры, '_', '-'")
+                    f"[LOG] Ошибка: действие '{action}' для {self.name} содержит недопустимые символы. Разрешены буквы, цифры, '_', '-'"
+                )
 
         st = request.args.get(f"{p}_power_state", "").strip().lower()
         if st:
-            if re.match(r'^(on|off|1|0|true|false)$', st):
+            if re.match(r"^(on|off|1|0|true|false)$", st):
                 if st in ("on", "1", "true"):
                     self.turn_on()
                 else:
                     self.turn_off()
             else:
-                print(f"[LOG] Ошибка: неверное состояние питания '{st}' для {self.name}")
+                print(
+                    f"[LOG] Ошибка: неверное состояние питания '{st}' для {self.name}"
+                )
 
     def connect(
         self, request: Optional[Request] = None
@@ -204,19 +219,23 @@ class MainControlUnit:
     def _apply_control(self, request: Request) -> None:
         mode = request.args.get("controller_mode", "").strip().lower()
         if mode:
-            if re.match(r'^(auto|manual)$', mode):
+            if re.match(r"^(auto|manual)$", mode):
                 self.mode = mode
                 print(f"[LOG] Контроллер: режим установлен в {self.mode}")
             else:
-                print(f"[LOG] Ошибка: неверный режим '{mode}'. Допустимо: auto / manual")
+                print(
+                    f"[LOG] Ошибка: неверный режим '{mode}'. Допустимо: auto / manual"
+                )
 
         clear = request.args.get("controller_clear_alerts", "").strip().lower()
         if clear:
-            if re.match(r'^(1|true|yes|on)$', clear):
+            if re.match(r"^(1|true|yes|on)$", clear):
                 self.alerts = []
                 print("[LOG] Контроллер: список тревог очищен")
             else:
-                print(f"[LOG] Ошибка: неверное значение clear_alerts '{clear}'. Игнорируем.")
+                print(
+                    f"[LOG] Ошибка: неверное значение clear_alerts '{clear}'. Игнорируем."
+                )
 
     def connect(
         self, request: Optional[Request] = None
@@ -243,22 +262,34 @@ class MainControlUnit:
             if temperature > 28.0 and not self.fan.status:
                 self.fan.turn_on()
                 self.alerts.append(f"Авто: вентилятор включён при {temperature}°C")
-                print(f"[LOG] Автоматика: включён вентилятор (температура {temperature}°C)")
+                print(
+                    f"[LOG] Автоматика: включён вентилятор (температура {temperature}°C)"
+                )
             elif temperature <= 28.0 and self.fan.status:
                 self.fan.turn_off()
                 self.alerts.append(f"Авто: вентилятор выключен при {temperature}°C")
-                print(f"[LOG] Автоматика: выключен вентилятор (температура {temperature}°C)")
+                print(
+                    f"[LOG] Автоматика: выключен вентилятор (температура {temperature}°C)"
+                )
 
         # Управление насосом по влажности почвы
         if self.pump:
             if soil_moisture < 30.0 and not self.pump.status:
                 self.pump.turn_on()
-                self.alerts.append(f"Авто: насос включён (влажность почвы {soil_moisture}%)")
-                print(f"[LOG] Автоматика: включён насос (влажность почвы {soil_moisture}%)")
+                self.alerts.append(
+                    f"Авто: насос включён (влажность почвы {soil_moisture}%)"
+                )
+                print(
+                    f"[LOG] Автоматика: включён насос (влажность почвы {soil_moisture}%)"
+                )
             elif soil_moisture >= 30.0 and self.pump.status:
                 self.pump.turn_off()
-                self.alerts.append(f"Авто: насос выключен (влажность почвы {soil_moisture}%)")
-                print(f"[LOG] Автоматика: выключен насос (влажность почвы {soil_moisture}%)")
+                self.alerts.append(
+                    f"Авто: насос выключен (влажность почвы {soil_moisture}%)"
+                )
+                print(
+                    f"[LOG] Автоматика: выключен насос (влажность почвы {soil_moisture}%)"
+                )
 
 
 class Database:
@@ -291,11 +322,12 @@ class Database:
     def _apply_control(self, request: Request) -> None:
         cmd = request.args.get("database_command", "").strip()
         if cmd:
-            if re.match(r'^[a-zA-Z0-9_\-]+$', cmd):
+            if re.match(r"^[a-zA-Z0-9_\-]+$", cmd):
                 print(f"[LOG] БД: принята управляющая команда '{cmd}'")
             else:
                 print(
-                    f"[LOG] Ошибка: команда БД '{cmd}' содержит недопустимые символы. Разрешены буквы, цифры, '_', '-'")
+                    f"[LOG] Ошибка: команда БД '{cmd}' содержит недопустимые символы. Разрешены буквы, цифры, '_', '-'"
+                )
 
     def connect(self, request: Optional[Request] = None) -> Dict[str, Union[str, int]]:
         if request is not None:
