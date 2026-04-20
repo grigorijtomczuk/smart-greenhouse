@@ -90,7 +90,20 @@ function getDatabaseData() {
         data: {},
         success: function (response) {
             $("#db_connection").val("Соединение: " + response.connection);
-            $("#db_records").val("Записей за сегодня: " + response.records_today);
+            if (response.db_name)
+                $("#db_name").val("MongoDB база: " + response.db_name);
+            else $("#db_name").val("MongoDB база: —");
+
+            if (typeof response.records_total !== "undefined")
+                $("#db_records").val("Записей всего: " + response.records_total);
+            else $("#db_records").val("Записей всего: —");
+
+            if (response.collections) {
+                const entries = Object.entries(response.collections);
+                entries.sort((a, b) => (b[1] || 0) - (a[1] || 0));
+                const lines = entries.map(([k, v]) => `${k}: ${v}`);
+                $("#db_collections").val(lines.join("\n") || "Коллекций пока нет");
+            } else $("#db_collections").val("Коллекций: —");
         },
     });
 }

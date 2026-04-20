@@ -1,7 +1,6 @@
 import random
 import re
 from abc import ABC, abstractmethod
-from datetime import datetime
 from typing import Dict, List, Optional, Union
 
 from werkzeug.wrappers import Request
@@ -290,54 +289,3 @@ class MainControlUnit:
                 print(
                     f"[LOG] Автоматика: выключен насос (влажность почвы {soil_moisture}%)"
                 )
-
-
-class Database:
-    def __init__(self, connection_string: str, storage_path: str):
-        self.connection_string = connection_string
-        self.storage_path = storage_path
-        self.records_today: int = 0
-
-    def save_reading(self, sensor_id: int, value: float, timestamp: datetime):
-        self.records_today += 1
-        print(
-            f"[LOG] БД: сохранено показание датчика {sensor_id} = {value} в {timestamp}"
-        )
-
-    def save_event(self, device_id: int, action: str, timestamp: datetime):
-        self.records_today += 1
-        print(
-            f"[LOG] БД: сохранено событие устройства {device_id}: {action} в {timestamp}"
-        )
-
-    def get_history(
-        self, start: datetime, end: datetime, device_id: Optional[int] = None
-    ):
-        print(
-            f"[LOG] БД: запрос истории с {start} по {end} для устройства {device_id if device_id else 'всех'}"
-        )
-
-        return []
-
-    def _apply_control(self, request: Request) -> None:
-        cmd = request.args.get("database_command", "").strip()
-        if cmd:
-            if re.match(r"^[a-zA-Z0-9_\-]+$", cmd):
-                print(f"[LOG] БД: принята управляющая команда '{cmd}'")
-            else:
-                print(
-                    f"[LOG] Ошибка: команда БД '{cmd}' содержит недопустимые символы. Разрешены буквы, цифры, '_', '-'"
-                )
-
-    def connect(self, request: Optional[Request] = None) -> Dict[str, Union[str, int]]:
-        if request is not None:
-            self._apply_control(request)
-        data = {
-            "connection": "ok",
-            "storage_path": self.storage_path,
-            "records_today": self.records_today,
-        }
-        print(
-            f"[LOG] Подключение к БД выполнено, записей за сегодня: {data['records_today']}, путь: {data['storage_path']}"
-        )
-        return data

@@ -2,7 +2,9 @@ import logging
 
 from flask import Flask, jsonify, render_template, request
 
-from devices import Actuator, Database, MainControlUnit, Sensor
+from db import Database
+from devices import Actuator, MainControlUnit, Sensor
+from logger import Logger
 
 app = Flask(__name__)
 
@@ -12,7 +14,9 @@ soil_sensor = Sensor(3, "Датчик влажности почвы", "soil_mois
 fan = Actuator(101, "Вентилятор", "fan", 120.0)
 pump = Actuator(102, "Насос полива", "pump", 80.0)
 controller = MainControlUnit(fan_device=fan, pump_device=pump)
-database = Database("sqlite:///greenhouse.db", "./data")
+
+database = Database(mongo_uri="mongodb://localhost:27017", db_name="greenhouse_logs")
+db_logger = Logger(database)
 
 last_temperature = 0.0
 last_soil = 0.0
@@ -35,6 +39,32 @@ def connect_temperature():
     data = temperature_sensor.connect()
     last_temperature = data["value"]
     controller.auto_control(float(last_temperature), float(last_soil))
+    db_logger.insert_sensor_reading(
+        sensor_id=int(data["id"]),
+        sensor_name=str(data["name"]),
+        sensor_type=str(data["type"]),
+        value=float(data["value"]),
+        unit=str(data["unit"]),
+        status=bool(data["status"]),
+    )
+    db_logger.insert_device_event(
+        device_id=fan.id,
+        device_name=fan.name,
+        device_type=fan.type,
+        status=bool(fan.status),
+        power=float(fan.power),
+        event="auto_control",
+        details={"reason": "temperature update"},
+    )
+    db_logger.insert_device_event(
+        device_id=pump.id,
+        device_name=pump.name,
+        device_type=pump.type,
+        status=bool(pump.status),
+        power=float(pump.power),
+        event="auto_control",
+        details={"reason": "temperature update"},
+    )
     return jsonify(data)
 
 
@@ -44,22 +74,75 @@ def connect_soil():
     data = soil_sensor.connect()
     last_soil = data["value"]
     controller.auto_control(float(last_temperature), float(last_soil))
+    db_logger.insert_sensor_reading(
+        sensor_id=int(data["id"]),
+        sensor_name=str(data["name"]),
+        sensor_type=str(data["type"]),
+        value=float(data["value"]),
+        unit=str(data["unit"]),
+        status=bool(data["status"]),
+    )
+    db_logger.insert_device_event(
+        device_id=fan.id,
+        device_name=fan.name,
+        device_type=fan.type,
+        status=bool(fan.status),
+        power=float(fan.power),
+        event="auto_control",
+        details={"reason": "soil update"},
+    )
+    db_logger.insert_device_event(
+        device_id=pump.id,
+        device_name=pump.name,
+        device_type=pump.type,
+        status=bool(pump.status),
+        power=float(pump.power),
+        event="auto_control",
+        details={"reason": "soil update"},
+    )
     return jsonify(data)
 
 
 @app.route("/connect/humidity")
 def connect_humidity():
-    return jsonify(humidity_sensor.connect())
+    data = humidity_sensor.connect()
+    db_logger.insert_sensor_reading(
+        sensor_id=int(data["id"]),
+        sensor_name=str(data["name"]),
+        sensor_type=str(data["type"]),
+        value=float(data["value"]),
+        unit=str(data["unit"]),
+        status=bool(data["status"]),
+    )
+    return jsonify(data)
 
 
 @app.route("/connect/fan")
 def connect_fan():
-    return jsonify(fan.connect())
+    data = fan.connect()
+    db_logger.insert_device_event(
+        device_id=int(data["id"]),
+        device_name=str(data["name"]),
+        device_type=str(data["type"]),
+        status=bool(data["status"]),
+        power=float(data["power"]),
+        event="manual_poll",
+    )
+    return jsonify(data)
 
 
 @app.route("/connect/pump")
 def connect_pump():
-    return jsonify(pump.connect())
+    data = pump.connect()
+    db_logger.insert_device_event(
+        device_id=int(data["id"]),
+        device_name=str(data["name"]),
+        device_type=str(data["type"]),
+        status=bool(data["status"]),
+        power=float(data["power"]),
+        event="manual_poll",
+    )
+    return jsonify(data)
 
 
 @app.route("/connect/controller")

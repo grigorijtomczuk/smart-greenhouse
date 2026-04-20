@@ -52,7 +52,8 @@ body {
         padding-bottom: 7px;
     }
 
-    &>input {
+    &>input,
+    &>textarea {
         width: 100%;
         padding: 10px;
         border-radius: var(--radius-sm);
@@ -117,7 +118,7 @@ body {
     &.mono {
         font-family: ui-monospace, monospace;
         font-size: 12px;
-        height: 100%;
+        flex: 1;
         resize: none;
     }
 }
