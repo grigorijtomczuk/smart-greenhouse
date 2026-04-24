@@ -1,5 +1,6 @@
 import re
-from typing import Any, Dict, Optional
+from statistics import mean
+from typing import Any, Dict, List, Optional
 
 import pymongo
 from werkzeug.wrappers import Request
@@ -48,6 +49,53 @@ class Database:
                 "records_total": 0,
             }
 
+    def get_sensor_value_stats(
+        self,
+        *,
+        sensor_type: str,
+        limit: int = 5000,
+    ) -> Dict[str, Any]:
+        try:
+            cursor = (
+                self._db["SensorReadings"]
+                .find({"sensor.type": sensor_type}, {"value": 1})
+                .sort("timestamp", pymongo.DESCENDING)
+                .limit(int(limit))
+            )
+
+            values: List[float] = []
+            for doc in cursor:
+                v = doc.get("value")
+                if v is None:
+                    continue
+                try:
+                    values.append(float(v))
+                except (TypeError, ValueError):
+                    continue
+
+            if not values:
+                return {
+                    "sensor_type": sensor_type,
+                    "count": 0,
+                    "avg": None,
+                    "max": None,
+                }
+
+            return {
+                "sensor_type": sensor_type,
+                "count": len(values),
+                "avg": float(mean(values)),
+                "max": float(max(values)),
+            }
+        except Exception as exc:
+            return {
+                "sensor_type": sensor_type,
+                "count": 0,
+                "avg": None,
+                "max": None,
+                "error": str(exc),
+            }
+
     def _apply_control(self, request: Request) -> None:
         cmd = request.args.get("database_command", "").strip()
         if not cmd:
@@ -69,4 +117,17 @@ class Database:
             )
         else:
             print(f"[LOG] MongoDB ERROR: {status.get('error')}")
+
+        # Аналитика данных
+        if status.get("connection") == "ok":
+            status["analytics"] = {
+                "temperature": self.get_sensor_value_stats(sensor_type="temperature"),
+                "humidity": self.get_sensor_value_stats(sensor_type="humidity"),
+                "soil_moisture": self.get_sensor_value_stats(
+                    sensor_type="soil_moisture"
+                ),
+            }
+        else:
+            status["analytics"] = {}
+
         return status

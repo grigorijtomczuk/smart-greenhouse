@@ -1,3 +1,9 @@
+let units = {
+    temperature: "",
+    humidity: "",
+    soil_moisture: "",
+};
+
 function getTemperatureData() {
     $.ajax({
         type: "GET",
@@ -7,6 +13,7 @@ function getTemperatureData() {
         data: {},
         success: function (response) {
             $("#temperature_value").val(response.value + " " + response.unit);
+            units.temperature = response.unit || "";
         },
     });
 }
@@ -20,6 +27,7 @@ function getHumidityData() {
         data: {},
         success: function (response) {
             $("#humidity_value").val(response.value + " " + response.unit);
+            units.humidity = response.unit || "";
         },
     });
 }
@@ -33,6 +41,7 @@ function getSoilData() {
         data: {},
         success: function (response) {
             $("#soil_value").val(response.value + " " + response.unit);
+            units.soil_moisture = response.unit || "";
         },
     });
 }
@@ -82,6 +91,11 @@ function getControllerData() {
 }
 
 function getDatabaseData() {
+    function formatValue(number, unit, fractionDigits = 1) {
+        if (typeof number !== "number" || Number.isNaN(number)) return "—";
+        return number.toFixed(fractionDigits) + " " + (unit || "");
+    }
+
     $.ajax({
         type: "GET",
         url: "/connect/database",
@@ -104,6 +118,36 @@ function getDatabaseData() {
                 const lines = entries.map(([k, v]) => `${k}: ${v}`);
                 $("#db_collections").val(lines.join("\n") || "Коллекций пока нет");
             } else $("#db_collections").val("Коллекций: —");
+
+            const analytics = response.analytics || {};
+            const temp = analytics.temperature || {};
+            const humidity = analytics.humidity || {};
+            const soil_moisture = analytics.soil_moisture || {};
+
+            $("#temperature_avg").val(
+                temp.error ? "ошибка" : formatValue(temp.avg, units.temperature)
+            );
+            $("#temperature_max").val(
+                temp.error ? "ошибка" : formatValue(temp.max, units.temperature)
+            );
+
+            $("#humidity_avg").val(
+                humidity.error ? "ошибка" : formatValue(humidity.avg, units.humidity)
+            );
+            $("#humidity_max").val(
+                humidity.error ? "ошибка" : formatValue(humidity.max, units.humidity)
+            );
+
+            $("#soil_avg").val(
+                soil_moisture.error
+                    ? "ошибка"
+                    : formatValue(soil_moisture.avg, units.soil_moisture)
+            );
+            $("#soil_max").val(
+                soil_moisture.error
+                    ? "ошибка"
+                    : formatValue(soil_moisture.max, units.soil_moisture)
+            );
         },
     });
 }
