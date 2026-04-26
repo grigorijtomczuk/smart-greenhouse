@@ -5,6 +5,8 @@ from flask import Flask, jsonify, render_template, request
 from db import Database
 from devices import Actuator, MainControlUnit, Sensor
 from logger import Logger
+import pymongo
+from datetime import datetime
 
 app = Flask(__name__)
 
@@ -169,6 +171,37 @@ def connect_command():
             "database": database.connect(request),
         }
     )
+
+
+@app.route("/api/temperature_history")
+def temperature_history():
+    """Возвращает историю температуры для построения графика."""
+    limit = request.args.get("limit", default=30, type=int)
+
+    collection = database.db["SensorReadings"]
+
+    cursor = collection.find(
+        {"sensor.type": "temperature"},
+        {"timestamp": 1, "value": 1, "_id": 0}
+    ).sort("timestamp", pymongo.DESCENDING).limit(limit)
+
+    records = list(cursor)[::-1]
+
+    timestamps = []
+    values = []
+    for rec in records:
+        ts = rec["timestamp"]
+        if isinstance(ts, datetime):
+            timestamps.append(ts.strftime("%Y-%m-%d %H:%M:%S"))
+        else:
+            timestamps.append(str(ts))
+        values.append(rec["value"])
+
+    return jsonify({
+        "timestamps": timestamps,
+        "values": values
+    })
+
 
 
 if __name__ == "__main__":

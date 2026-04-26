@@ -201,3 +201,91 @@ $("#send_commands").on("click", sendCommands);
 
 setInterval(updateDashboard, 1000);
 updateDashboard();
+
+let temperatureChart = null;
+
+function loadTemperatureHistory(limit = 30) {
+    $.ajax({
+        type: "GET",
+        url: `/api/temperature_history?limit=${limit}`,
+        dataType: "json",
+        success: function(data) {
+            const ctx = document.getElementById('temperatureChart').getContext('2d');
+            if (temperatureChart) {
+                temperatureChart.destroy();
+            }
+            temperatureChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.timestamps,
+                    datasets: [{
+                        label: 'Температура, °C',
+                        data: data.values,
+                        borderColor: '#182d4a',
+                        backgroundColor: 'rgba(24, 45, 74, 0.1)',
+                        borderWidth: 2,
+                        tension: 0.3,
+                        fill: true,
+                        pointBackgroundColor: '#182d4a',
+                        pointRadius: 3,
+                        pointHoverRadius: 6,
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { position: 'top' },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.raw} °C`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            title: { display: true, text: 'Температура (°C)', color: '#182d4a' },
+                            min: 0,
+                            max: 40,
+                            grid: { color: '#e0e7f0' }
+                        },
+                        x: {
+                            title: { display: true, text: 'Время', color: '#182d4a' },
+                            ticks: {
+                                maxRotation: 45,
+                                autoSkip: true,
+                                maxTicksLimit: 8
+                            }
+                        }
+                    }
+                }
+            });
+        },
+        error: function(err) {
+            console.error("Ошибка загрузки истории температуры:", err);
+        }
+    });
+}
+
+$(document).ready(function() {
+    let currentLimit = $("#history_limit").val();
+    loadTemperatureHistory(currentLimit);
+
+    $("#refresh_chart").on("click", function() {
+        let limit = $("#history_limit").val();
+        loadTemperatureHistory(limit);
+    });
+
+    setInterval(function() {
+        let limit = $("#history_limit").val();
+        loadTemperatureHistory(limit);
+    }, 5000);
+});
+
+setInterval(updateDashboard, 1000);
+updateDashboard();
